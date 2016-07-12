@@ -1,11 +1,4 @@
 #include "complex_calc.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <dlfcn.h>
-#include <sys/types.h>
-#include <dirent.h>
-#include <string.h>
-#include <strings.h>
 
 void* load_lib(char *lib_name) {
 	void *lib;
@@ -78,8 +71,8 @@ int main()
 				c++;
 			}
 		}	
-
-		printf("> ");
+			
+		printf("> ");	
 		scanf("%d", &op);
 
 		char tmp_path[strlen(arr_dir[op-1]) + 6];

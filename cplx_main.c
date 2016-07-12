@@ -2,6 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <dlfcn.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <string.h>
+#include <strings.h>
 
 void* load_lib(char *lib_name) {
 	void *lib;
@@ -24,7 +28,31 @@ int main()
 	complex_t a, b, res;
 	int op;
 	void *lib;
+
+	DIR *dir;
+	struct dirent *entry;
+
+	int n_dir;
+
+	dir = opendir("./lib");
+	if (!dir) {
+		perror("diropen");
+		exit(1);
+	}
 	
+	for (n_dir = 0; (entry = readdir(dir)) != NULL; n_dir++)
+		;
+    	
+	closedir(dir);  
+
+	char **arr_dir = (char **) calloc(n_dir, sizeof(char**));
+	if (!arr_dir) {
+		printf("Ошибка при распределении памяти\n");	
+		exit(1);
+	}
+
+	printf("\n");	
+
 	while(1) {
 		printf("Введите два числа:\n");
         	printf("a.re: ");
@@ -36,66 +64,50 @@ int main()
         	printf("b.im: ");
         	scanf("%f", &b.i);	       
 	
-		printf("\nВыберите один из пунктов: \n\n");
+		dir = opendir("./lib");
 
-		printf("1. Сложение\n");	
-        	printf("2. Вычитание\n");
-        	printf("3. Умножение\n");
-        	printf("4. Деление\n");
-        	printf("5. Выход\n\n");
+		int c = 0;
+
+		printf("\nВыберите библиотеку:\n");
+
+		while ((entry = readdir(dir)) != NULL) {
+			if (strcmp(".", entry->d_name) && strcmp("..", entry->d_name)) {
+				printf("%d) %s\n", c+1, entry->d_name);
+				arr_dir[c] = (char *) calloc(200, sizeof(char));
+				strcpy(arr_dir[c], entry->d_name);
+				c++;
+			}
+		}	
+
 		printf("> ");
 		scanf("%d", &op);
 
-		switch(op) {	
-			case 1: {
-				lib = load_lib("./libcplx_add.so");
-				complex_t (*cplx_add_ptr) (complex_t a, complex_t b);
-				cplx_add_ptr = dlsym(lib, "cplx_add");
-				res = (*cplx_add_ptr)(a, b);
+		char tmp_path[strlen(arr_dir[op-1]) + 6];
+		bzero(tmp_path, sizeof(tmp_path));		
+		strcat(tmp_path, "./lib/");
+		strcat(tmp_path, arr_dir[op-1]);
 
-				//res = cplx_add(a, b);
-				cplx_out(res);
-				dlclose(lib);
-				break;
-			}
-			case 2: {
-				lib = load_lib("./libcplx_sub.so");
-				complex_t (*cplx_sub_ptr) (complex_t a, complex_t b);
-				cplx_sub_ptr = dlsym(lib, "cplx_sub");
-				res = cplx_sub_ptr(a, b);
+		printf("%s\n", arr_dir[op-1]);		
+		lib = load_lib(tmp_path);
+		complex_t (*cplx_op_ptr) (complex_t a, complex_t b);
 
-				//res = cplx_sub(a, b);
-				cplx_out(res);
-				dlclose(lib);
-				break;
-			}	
-			case 3: {
-				lib = load_lib("./libcplx_mul.so");
-				complex_t (*cplx_mul_ptr) (complex_t a, complex_t b);
-				cplx_mul_ptr = dlsym(lib, "cplx_mul");
-				res = cplx_mul_ptr(a, b);				
-
-				//res = cplx_mul(a, b);
-				cplx_out(res);
-				dlclose(lib);
-			}
-			case 4: {				
-				lib = load_lib("./libcplx_div.so");
-				complex_t (*cplx_div_ptr) (complex_t a, complex_t b);
-				cplx_div_ptr = dlsym(lib, "cplx_div");
-				cplx_div_ptr(a, b);
-
-				//res = cplx_div(a, b);
-				cplx_out(res);
-				dlclose(lib);
-				break;
-			}
-			case 5: 
-				exit(0);	
-			default:
-				printf("Некорректный ввод.\n");
-		}	
+		/* Вырезаем lib и .so (libcplx_add.so -> cplx_add)*/ 
+		for (c = 3; arr_dir[op-1][c] != '.'; c++)
+			tmp_path[c-3] = arr_dir[op-1][c];
+		tmp_path[c-3] = '\0';		
+		
+		cplx_op_ptr = dlsym(lib, tmp_path);
+		res = (*cplx_op_ptr)(a, b);
+				
+		cplx_out(res);
+		dlclose(lib);
 	}
+	
+	int i;
+	for (i = 0; i < n_dir; i++)
+		free(arr_dir[i]);
+	free(arr_dir);
+
 	return 0;
 }
 

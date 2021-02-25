@@ -1,44 +1,36 @@
-CFLAGS=-g -Wall -ansi
+CC = gcc
+CFLAGS = -g -Wall -ansi
+LDFLAGS = -shared
 
-all: complex_calc libcplx make_dir
+TARGET_LIB = libcplx_add.so libcplx_sub.so libcplx_mul.so libcplx_div.so
 
-complex_calc: cplx_main.o 
-	gcc $(CFLAGS) -ldl -o $@ cplx_main.o 
+EXECUTABLE = complex_calc
 
-libcplx: libcplx_add.so libcplx_sub.so libcplx_mul.so libcplx_div.so
+all: $(EXECUTABLE) $(TARGET_LIB) make_dir
+
+$(EXECUTABLE): cplx_main.o 
+	$(CC) $(CFLAGS) -o $@ cplx_main.o -ldl
 
 cplx_main.o: cplx_main.c  
-	gcc $(CFLAGS) -c cplx_main.c  
+	$(CC) $(CFLAGS) -c cplx_main.c  
 
 libcplx_add.so: cplx_add.o
-	gcc $(CFLAGS) -shared -o libcplx_add.so $^
+	$(CC) $(LDFLAGS) -o $@ $^
 
 libcplx_sub.so: cplx_sub.o
-	gcc $(CFLAGS) -shared -o libcplx_sub.so $^
+	$(CC) $(LDFLAGS) -o $@ $^
 
 libcplx_mul.so: cplx_mul.o
-	gcc $(CFLAGS) -shared -o libcplx_mul.so $^
+	$(CC) $(LDFLAGS) -o $@ $^
 
 libcplx_div.so: cplx_div.o
-	gcc $(CFLAGS) -shared -o libcplx_div.so $^
+	$(CC) $(LDFLAGS) -o $@ $^
 
 .c.o:
-	gcc $(CFLAGS) -c -fPIC $^ 
-
-#cplx_add.o: cplx_add.c 
-#	gcc -c -fPIC cplx_add.c 
-
-#cplx_sub.o: cplx_sub.c
-#	gcc -c -fPIC cplx_sub.c 
-
-#cplx_mul.o: cplx_mul.c 
-#	gcc -c -fPIC cplx_mul.c 
-
-#cplx_div.o: cplx_div.c 
-#	gcc -c -fPIC cplx_div.c 
+	$(CC) $(CFLAGS) -c -fPIC $^  
 
 make_dir: 
-	mkdir -p ./lib && mv *.so ./lib
+	mkdir -p ./lib && mv $(TARGET_LIB) ./lib
 
-clear:
-	rm -rf *.o *.so complex_calc ./lib
+clean:
+	rm -rf *.o $(TARGET_LIB) $(EXECUTABLE) ./lib

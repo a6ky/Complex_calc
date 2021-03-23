@@ -1,36 +1,32 @@
 CC = gcc
-CFLAGS = -g -Wall -ansi
+CFLAGS = -g -Wall
 LDFLAGS = -shared
 
-TARGET_LIB = libcplx_add.so libcplx_sub.so libcplx_mul.so libcplx_div.so
+EXEC = complex_calc
 
-EXECUTABLE = complex_calc
+OBJ_CATALOG = obj
+LIB_CATALOG = lib
+LIB_PREFIX = lib
 
-all: $(EXECUTABLE) $(TARGET_LIB) make_dir
+LIB_LIST = cplx_add.o cplx_sub.o cplx_mul.o cplx_div.o
+SOURCE = $(wildcard *.c)
+MAIN_SRC = cplx_main.c
 
-$(EXECUTABLE): cplx_main.o 
-	$(CC) $(CFLAGS) -o $@ cplx_main.o -ldl
+OBJ = $(patsubst %.c, $(OBJ_CATALOG)/%.o, $(SOURCE))
+LIB = $(patsubst %.o, $(LIB_CATALOG)/%.so, $(addprefix lib, $(LIB_LIST)))
 
-cplx_main.o: cplx_main.c  
-	$(CC) $(CFLAGS) -c cplx_main.c  
+all: $(EXEC) $(OBJ) $(LIB)
 
-libcplx_add.so: cplx_add.o
-	$(CC) $(LDFLAGS) -o $@ $^
+$(EXEC): $(OBJ) 
+	$(CC) $(MAIN_SRC) -o $@ -ldl
+	
+$(OBJ_CATALOG)/%.o: %.c
+	$(CC) -fPIC -c $< -o $@
 
-libcplx_sub.so: cplx_sub.o
-	$(CC) $(LDFLAGS) -o $@ $^
+$(LIB_CATALOG)/$(LIB_PREFIX)%.so: $(OBJ_CATALOG)/%.o
+	$(CC) $(LDFLAGS) -o $@ $<
 
-libcplx_mul.so: cplx_mul.o
-	$(CC) $(LDFLAGS) -o $@ $^
-
-libcplx_div.so: cplx_div.o
-	$(CC) $(LDFLAGS) -o $@ $^
-
-.c.o:
-	$(CC) $(CFLAGS) -c -fPIC $^  
-
-make_dir: 
-	mkdir -p ./lib && mv $(TARGET_LIB) ./lib
+$(shell mkdir -p $(OBJ_CATALOG) $(LIB_CATALOG))
 
 clean:
-	rm -rf *.o $(TARGET_LIB) $(EXECUTABLE) ./lib
+	rm -rf $(EXEC) $(OBJ_CATALOG) $(LIB_CATALOG)
